@@ -12,6 +12,11 @@ const PORT = process.env.PORT || 4567;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Dashboard is the landing page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
 // Load the Gemini prompt template
 const geminiPromptTemplate = fs.readFileSync(
   path.join(__dirname, 'gemini_prompt.md'),
