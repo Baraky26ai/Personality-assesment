@@ -82,7 +82,7 @@ function blendScores(fc, sjt, interview) {
   const blended = {};
   for (const facet of ['C1', 'C2', 'C3', 'C4', 'C5', 'C6']) {
     blended[facet] = Math.round(
-      (fc[facet] * 0.25 + sjt[facet] * 0.35 + interview[facet] * 0.40) * 100
+      (fc[facet] * 0.20 + sjt[facet] * 0.25 + interview[facet] * 0.55) * 100
     ) / 100;
   }
   return blended;

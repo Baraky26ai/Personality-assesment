@@ -713,10 +713,10 @@
   <!-- ============ SECTION 6: Results ============ -->
   <div class="section" data-section="6">
     <div class="card">
-      <h2>Assessment Results</h2>
+      <h2>Preliminary Score (FC + SJT only)</h2>
       <div class="subtitle" id="resultsMeta"></div>
-      <div class="score-big" id="finalScoreDisplay">--</div>
-      <div class="score-label" id="scoreLabelDisplay">Calculating...</div>
+      <div class="score-big" id="finalScoreDisplay" style="opacity:0.5">--</div>
+      <div class="score-label" id="scoreLabelDisplay">Paste transcript and run Gemini for final score</div>
     </div>
 
     <div class="card">
@@ -738,27 +738,35 @@
     <div class="gemini-section" id="geminiSection">
       <h3>AI-Powered Deep Analysis (Gemini)</h3>
       <div id="geminiStatus">
-        <div class="loading">
-          <div class="spinner"></div>
-          Analyzing transcript and responses with Gemini...
-        </div>
+        <div class="instruction">Paste the Zoom transcript below and click "Analyze with Gemini" to run the AI scoring.</div>
       </div>
       <div id="geminiResults" class="hidden"></div>
     </div>
 
+    <div class="card" style="background:#e8f5e9;border:1px solid #4caf50">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:1.5em">✓</span>
+        <h3 style="margin:0;color:#2e7d32">Assessment Saved</h3>
+      </div>
+      <div class="subtitle" style="color:#333">All data has been automatically saved to the database. You can now go back to the dashboard or optionally run Gemini analysis.</div>
+    </div>
+
     <div class="card" id="transcriptSection">
-      <h3>Zoom Transcript</h3>
-      <div class="subtitle">Paste the Zoom transcript here for Gemini analysis (optional if not auto-submitted)</div>
+      <h3>Optional: Run Gemini Analysis</h3>
+      <div class="subtitle">Paste the Zoom transcript and click "Analyze" to get the final AI-powered score. You can also do this later from the dashboard.</div>
       <textarea class="key-phrases" id="transcriptInput" rows="6" placeholder="Paste Zoom transcript here..."></textarea>
-      <button class="btn btn-primary" style="margin-top:12px" onclick="rerunGemini()">Re-analyze with Transcript</button>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="rerunGemini()">Analyze with Gemini</button>
+      </div>
+      <div id="saveStatus" style="margin-top:8px"></div>
     </div>
 
     <div id="sheetsStatus"></div>
 
     <div class="nav-buttons">
+      <a href="/dashboard.html" class="btn btn-primary" style="text-decoration:none">Back to Dashboard</a>
       <button class="btn btn-outline" onclick="exportReport()">Export JSON Report</button>
-      <button class="btn btn-primary" onclick="window.print()">Print Report</button>
-      <a href="/dashboard.html" class="btn btn-outline" style="text-decoration:none">Back to Dashboard</a>
+      <button class="btn btn-outline" onclick="window.print()">Print Report</button>
     </div>
   </div>
 
@@ -1155,16 +1163,26 @@ function startAssessment() {
   startTime = Date.now();
   timerInterval = setInterval(updateTimer, 1000);
 
-  goToSection(1);
+  const isQuick = new URLSearchParams(window.location.search).get('mode') === 'quick';
+  if (isQuick) {
+    goToSection(4); // Skip to interview
+  } else {
+    goToSection(1);
+  }
 }
 
+const isQuickMode = new URLSearchParams(window.location.search).get('mode') === 'quick';
+
 function updateProgress() {
-  const totalSections = 6;
-  const pct = Math.round((currentSection / totalSections) * 100);
+  const totalSections = isQuickMode ? 3 : 6;
+  const sectionIndex = isQuickMode ? Math.max(0, currentSection - 3) : currentSection;
+  const pct = Math.round((sectionIndex / totalSections) * 100);
   document.getElementById('progressFill').style.width = pct + '%';
 
-  const labels = ['Setup', 'Opening', 'Section A: Forced-Choice', 'Section B: Scenarios',
-                  'Section C: Interview', 'Closing & Process', 'Results'];
+  const labels = isQuickMode
+    ? { 0: 'Setup', 4: 'Interview', 5: 'Closing & Process', 6: 'Results' }
+    : { 0: 'Setup', 1: 'Opening', 2: 'Section A: Forced-Choice', 3: 'Section B: Scenarios',
+        4: 'Section C: Interview', 5: 'Closing & Process', 6: 'Results' };
   document.getElementById('progressLabel').textContent = labels[currentSection] || '';
 }
 
@@ -1182,6 +1200,13 @@ function updateTimer() {
 
 async function submitAssessment() {
   state.notes = document.getElementById('additionalNotes').value;
+
+  if (isQuickMode) {
+    // Quick mode — skip algorithmic scoring, go straight to Gemini section
+    goToSection(6);
+    displayQuickResults();
+    return;
+  }
 
   // Set default interview scores (Gemini will do real scoring from transcript)
   for (const facet of ['C1','C2','C3','C4','C5','C6']) {
@@ -1214,8 +1239,25 @@ async function submitAssessment() {
   // Save to Google Sheets
   saveToSheets(data.finalScore, data.blended);
 
-  // Gemini scoring (async) - API key is on the server
-  runGeminiAnalysis();
+  // Gemini scoring — wait for transcript to be pasted manually
+}
+
+function displayQuickResults() {
+  const name = document.getElementById('candidateName').value;
+  const email = document.getElementById('candidateEmail').value;
+  const pos = document.getElementById('position').value;
+  document.getElementById('resultsMeta').textContent = `${name} (${email}) — ${pos}`;
+  document.getElementById('finalScoreDisplay').textContent = '—';
+  document.getElementById('finalScoreDisplay').style.opacity = '0.3';
+  document.getElementById('scoreLabelDisplay').textContent = 'Interview Only — paste transcript and send to Gemini for scoring';
+
+  // Hide the preliminary score cards
+  document.getElementById('facetBars').parentElement.style.display = 'none';
+  document.getElementById('componentScores').parentElement.style.display = 'none';
+  document.getElementById('alertsSection').style.display = 'none';
+
+  // Save to Google Sheets (no score yet)
+  saveToSheets(null, {});
 }
 
 function displayResults(data) {
@@ -1262,9 +1304,9 @@ function displayResults(data) {
     <table style="width:100%;font-size:14px;border-collapse:collapse">
       <tr style="background:var(--bg)">
         <th style="text-align:left;padding:8px">Facet</th>
-        <th style="padding:8px">FC (25%)</th>
-        <th style="padding:8px">SJT (35%)</th>
-        <th style="padding:8px">Interview (40%)</th>
+        <th style="padding:8px">FC (20%)</th>
+        <th style="padding:8px">SJT (25%)</th>
+        <th style="padding:8px">Interview (55%)</th>
         <th style="padding:8px;font-weight:700">Blended</th>
       </tr>
       ${Object.keys(FACET_NAMES).map(f => `
@@ -1380,6 +1422,43 @@ function rerunGemini() {
   runGeminiAnalysis();
 }
 
+async function saveForLater() {
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.innerHTML = '<div class="loading"><div class="spinner"></div>Saving...</div>';
+  try {
+    const res = await fetch('/api/save-assessment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        candidateEmail: document.getElementById('candidateEmail').value,
+        data: {
+          candidateName: document.getElementById('candidateName').value,
+          candidateEmail: document.getElementById('candidateEmail').value,
+          position: document.getElementById('position').value,
+          assessorName: document.getElementById('assessorName').value,
+          fc: state.fc,
+          sjt: state.sjt,
+          interview: state.interview,
+          starChecks: state.starChecks,
+          keyPhrases: state.keyPhrases,
+          process: state.process,
+          redFlags: state.redFlags,
+          greenFlags: state.greenFlags,
+          notes: state.notes,
+        },
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      statusEl.innerHTML = '<div class="success-box">Assessment saved! You can paste the transcript and send to Gemini later from the dashboard.</div>';
+    } else {
+      statusEl.innerHTML = `<div class="alert-box">${data.error}</div>`;
+    }
+  } catch (err) {
+    statusEl.innerHTML = `<div class="alert-box">Failed to save: ${err.message}</div>`;
+  }
+}
+
 async function saveToSheets(finalScore, blended) {
   const statusEl = document.getElementById('sheetsStatus');
   statusEl.innerHTML = '<div class="loading"><div class="spinner"></div>Saving to Google Sheets...</div>';
@@ -1395,6 +1474,16 @@ async function saveToSheets(finalScore, blended) {
         finalScore,
         facetScores: blended,
         date: new Date().toISOString(),
+        assessmentType: isQuickMode ? 'Quick' : 'Full',
+        answerData: {
+          fc: state.fc,
+          sjt: state.sjt,
+          process: state.process,
+          keyPhrases: state.keyPhrases,
+          redFlags: state.redFlags,
+          greenFlags: state.greenFlags,
+          notes: state.notes,
+        },
       }),
     });
     const data = await res.json();

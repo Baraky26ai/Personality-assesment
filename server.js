@@ -37,7 +37,7 @@ async function initGoogleSheets() {
   try {
     const serviceAccountAuth = new JWT({
       email,
-      key: key.replace(/\\n/g, '\n'),
+      key,
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
@@ -45,18 +45,30 @@ async function initGoogleSheets() {
     await sheetsDoc.loadInfo();
     console.log(`✓  Connected to Google Sheet: "${sheetsDoc.title}"`);
 
-    // Ensure the "Candidates" sheet exists with headers
+    // Ensure the "Candidates" sheet exists with correct headers
+    const REQUIRED_HEADERS = [
+      'Date', 'Candidate Name', 'Email', 'Position',
+      'Assessor', 'Final Score', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6',
+      'Gemini Score', 'Status', 'Type', 'AnswerData'
+    ];
+
     let sheet = sheetsDoc.sheetsByTitle['Candidates'];
     if (!sheet) {
       sheet = await sheetsDoc.addSheet({
         title: 'Candidates',
-        headerValues: [
-          'Date', 'Candidate Name', 'Email', 'Position',
-          'Assessor', 'Final Score', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6',
-          'Gemini Score', 'Status'
-        ],
+        headerValues: REQUIRED_HEADERS,
       });
       console.log('✓  Created "Candidates" sheet with headers');
+    } else {
+      // Add any missing headers to existing sheet
+      await sheet.loadHeaderRow();
+      const existing = sheet.headerValues || [];
+      const missing = REQUIRED_HEADERS.filter(h => !existing.includes(h));
+      if (missing.length) {
+        const newHeaders = [...existing, ...missing];
+        await sheet.setHeaderRow(newHeaders);
+        console.log(`✓  Added missing columns: ${missing.join(', ')}`);
+      }
     }
   } catch (err) {
     console.error('✗  Google Sheets connection failed:', err.message);
@@ -156,7 +168,7 @@ function blendScores(fc, sjt, interview) {
   const blended = {};
   for (const facet of ['C1', 'C2', 'C3', 'C4', 'C5', 'C6']) {
     blended[facet] = Math.round(
-      (fc[facet] * 0.25 + sjt[facet] * 0.35 + interview[facet] * 0.40) * 100
+      (fc[facet] * 0.20 + sjt[facet] * 0.25 + interview[facet] * 0.55) * 100
     ) / 100;
   }
   return blended;
@@ -208,7 +220,7 @@ app.post('/api/score-local', (req, res) => {
 
 // Score with Gemini (full analysis including transcript)
 app.post('/api/score-gemini', async (req, res) => {
-  const { answerSheetData, transcript, candidateName, position, assessorName } = req.body;
+  const { answerSheetData, transcript, candidateName, position, assessorName, customPrompt } = req.body;
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -217,13 +229,17 @@ app.post('/api/score-gemini', async (req, res) => {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    const answerSheetFormatted = JSON.stringify(answerSheetData, null, 2);
-
-    let prompt = geminiPromptTemplate
-      .replace('[PASTE ANSWER SHEET DATA HERE]', answerSheetFormatted)
-      .replace('[PASTE ZOOM TRANSCRIPT HERE]', transcript || 'No transcript provided. Score based on answer sheet data only.');
+    let prompt;
+    if (customPrompt) {
+      prompt = customPrompt;
+    } else {
+      const answerSheetFormatted = JSON.stringify(answerSheetData, null, 2);
+      prompt = geminiPromptTemplate
+        .replace('[PASTE ANSWER SHEET DATA HERE]', answerSheetFormatted)
+        .replace('[PASTE ZOOM TRANSCRIPT HERE]', transcript || 'No transcript provided. Score based on answer sheet data only.');
+    }
 
     const result = await model.generateContent(prompt);
     const response = result.response;
@@ -290,7 +306,7 @@ app.post('/api/save-candidate', async (req, res) => {
   }
 
   try {
-    const { candidateName, candidateEmail, position, assessorName, finalScore, facetScores, date } = req.body;
+    const { candidateName, candidateEmail, position, assessorName, finalScore, facetScores, date, assessmentType, answerData } = req.body;
     const sheet = sheetsDoc.sheetsByTitle['Candidates'];
 
     await sheet.addRow({
@@ -299,7 +315,7 @@ app.post('/api/save-candidate', async (req, res) => {
       'Email': candidateEmail,
       'Position': position,
       'Assessor': assessorName,
-      'Final Score': finalScore,
+      'Final Score': finalScore ?? '',
       'C1': facetScores?.C1 ?? '',
       'C2': facetScores?.C2 ?? '',
       'C3': facetScores?.C3 ?? '',
@@ -308,6 +324,8 @@ app.post('/api/save-candidate', async (req, res) => {
       'C6': facetScores?.C6 ?? '',
       'Gemini Score': '',
       'Status': 'Pending Gemini',
+      'Type': assessmentType || 'Full',
+      'AnswerData': answerData ? JSON.stringify(answerData) : '',
     });
 
     res.json({ success: true });
@@ -327,22 +345,80 @@ app.get('/api/candidates', async (req, res) => {
     const sheet = sheetsDoc.sheetsByTitle['Candidates'];
     const rows = await sheet.getRows();
 
-    const candidates = rows.map(row => ({
-      date: row.get('Date'),
-      name: row.get('Candidate Name'),
-      email: row.get('Email'),
-      position: row.get('Position'),
-      assessor: row.get('Assessor'),
-      finalScore: row.get('Final Score'),
-      geminiScore: row.get('Gemini Score'),
-      status: row.get('Status'),
-    }));
+    const candidates = rows.map(row => {
+      let answerData = null;
+      try { answerData = JSON.parse(row.get('AnswerData') || 'null'); } catch(e) {}
+      return {
+        date: row.get('Date'),
+        name: row.get('Candidate Name'),
+        email: row.get('Email'),
+        position: row.get('Position'),
+        assessor: row.get('Assessor'),
+        finalScore: row.get('Final Score'),
+        geminiScore: row.get('Gemini Score'),
+        status: row.get('Status'),
+        type: row.get('Type') || 'Full',
+        answerData,
+      };
+    });
 
     res.json({ success: true, candidates });
   } catch (err) {
     console.error('Failed to read Sheets:', err.message);
     res.json({ success: false, error: err.message, candidates: [] });
   }
+});
+
+// Update score manually (saves as Gemini Score)
+app.post('/api/update-score', async (req, res) => {
+  if (!sheetsDoc) return res.json({ success: false, error: 'Google Sheets not configured' });
+  const { email, score } = req.body;
+  if (!email || score == null) return res.json({ success: false, error: 'Missing email or score' });
+  try {
+    const sheet = sheetsDoc.sheetsByTitle['Candidates'];
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.get('Email') === email);
+    if (!row) return res.json({ success: false, error: 'Candidate not found' });
+    row.set('Gemini Score', score);
+    row.set('Status', 'Complete');
+    await row.save();
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+// Build Gemini prompt preview (for editing before sending)
+app.post('/api/build-prompt', (req, res) => {
+  const { answerSheetData, transcript } = req.body;
+  const answerSheetFormatted = JSON.stringify(answerSheetData, null, 2);
+  const prompt = geminiPromptTemplate
+    .replace('[PASTE ANSWER SHEET DATA HERE]', answerSheetFormatted)
+    .replace('[PASTE ZOOM TRANSCRIPT HERE]', transcript || 'No transcript provided.');
+  res.json({ success: true, prompt });
+});
+
+// Save assessment data for later Gemini analysis
+const savedAssessments = {};
+
+app.post('/api/save-assessment', (req, res) => {
+  const { candidateEmail, data } = req.body;
+  if (!candidateEmail) return res.json({ success: false, error: 'No email provided' });
+  savedAssessments[candidateEmail] = { ...data, savedAt: new Date().toISOString() };
+  res.json({ success: true });
+});
+
+app.get('/api/saved-assessment/:email', (req, res) => {
+  const data = savedAssessments[req.params.email];
+  if (!data) return res.json({ success: false, error: 'No saved assessment found' });
+  res.json({ success: true, data });
+});
+
+app.get('/api/saved-assessments', (req, res) => {
+  const list = Object.entries(savedAssessments).map(([email, d]) => ({
+    email, candidateName: d.candidateName, position: d.position, savedAt: d.savedAt,
+  }));
+  res.json({ success: true, assessments: list });
 });
 
 // ============================================================
