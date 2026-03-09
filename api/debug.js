@@ -6,6 +6,8 @@ module.exports = async function handler(req, res) {
     keyStart: (process.env.GOOGLE_PRIVATE_KEY || '').substring(0, 30),
     keyHasRealNewlines: (process.env.GOOGLE_PRIVATE_KEY || '').includes('\n'),
     keyHasEscapedNewlines: (process.env.GOOGLE_PRIVATE_KEY || '').includes('\\n'),
+    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    sheetId: process.env.GOOGLE_SHEET_ID,
   };
 
   try {
