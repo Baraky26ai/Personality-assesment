@@ -6,9 +6,9 @@ let sheetsDoc = null;
 async function getSheet() {
   if (sheetsDoc) return sheetsDoc;
 
-  const sheetId = process.env.GOOGLE_SHEET_ID;
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key = process.env.GOOGLE_PRIVATE_KEY;
+  const sheetId = (process.env.GOOGLE_SHEET_ID || '').trim();
+  const email = (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '').trim();
+  const key = (process.env.GOOGLE_PRIVATE_KEY || '').trim();
 
   if (!sheetId || !email || !key) return null;
 
