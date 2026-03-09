@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personality Assessment — Dashboard</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 30px;
+    }
+    .header h1 { font-size: 22px; font-weight: 700; color: var(--primary); }
+    .header p { color: var(--muted); font-size: 14px; }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 28px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .stat-card .number {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .stat-card .label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px;
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: var(--primary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    tr:hover td { background: #f1f5f9; }
+
+    .score-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 13px;
+      min-width: 40px;
+      text-align: center;
+    }
+    .score-low { background: #fef2f2; color: var(--danger); }
+    .score-mid { background: #fffbeb; color: var(--warning); }
+    .score-high { background: #f0fdf4; color: var(--success); }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-complete { background: #f0fdf4; color: var(--success); }
+    .status-pending { background: #fffbeb; color: var(--warning); }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+
+    .loading { text-align: center; padding: 40px; color: var(--muted); }
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      outline: none;
+    }
+    .search-bar input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>Personality Assessment</h1>
+      <p>Candidate Assessment Dashboard</p>
+    </div>
+    <a href="/index.html" class="btn btn-primary">+ New Assessment</a>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat-card">
+      <div class="number" id="totalCount">—</div>
+      <div class="label">Total Assessments</div>
+    </div>
+    <div class="stat-card">
+      <div class="number" id="avgScore">—</div>
+      <div class="label">Average Score</div>
+    </div>
+    <div class="stat-card">
+      <div class="number" id="highCount">—</div>
+      <div class="label">Recommended (75+)</div>
+    </div>
+    <div class="stat-card">
+      <div class="number" id="recentCount">—</div>
+      <div class="label">This Month</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>All Candidates</h2>
+
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search by name, email, or position..." oninput="filterTable()">
+    </div>
+
+    <div id="tableContainer">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div>Loading candidates...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let allCandidates = [];
+
+async function loadCandidates() {
+  const container = document.getElementById('tableContainer');
+
+  try {
+    const res = await fetch('/api/candidates');
+    const data = await res.json();
+
+    if (!data.success && data.error) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <h3>Google Sheets Not Connected</h3>
+          <p>Configure your Google Sheets credentials in the <code>.env</code> file to see candidates here.</p>
+          <p style="margin-top:16px"><a href="/index.html" class="btn btn-primary">Start an Assessment</a></p>
+        </div>`;
+      return;
+    }
+
+    allCandidates = data.candidates || [];
+
+    if (allCandidates.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <h3>No Assessments Yet</h3>
+          <p>Click "New Assessment" to evaluate your first candidate.</p>
+        </div>`;
+      updateStats([]);
+      return;
+    }
+
+    updateStats(allCandidates);
+    renderTable(allCandidates);
+  } catch (err) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>Connection Error</h3>
+        <p>Could not reach the server. Make sure it's running.</p>
+      </div>`;
+  }
+}
+
+function updateStats(candidates) {
+  document.getElementById('totalCount').textContent = candidates.length;
+
+  const scores = candidates.map(c => parseFloat(c.finalScore)).filter(s => !isNaN(s));
+  document.getElementById('avgScore').textContent = scores.length
+    ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+    : '—';
+
+  document.getElementById('highCount').textContent = scores.filter(s => s >= 75).length;
+
+  const now = new Date();
+  const thisMonth = candidates.filter(c => {
+    if (!c.date) return false;
+    const parts = c.date.split('.');
+    if (parts.length === 3) {
+      return parseInt(parts[1]) === now.getMonth() + 1 && parseInt(parts[2]) === now.getFullYear();
+    }
+    return false;
+  }).length;
+  document.getElementById('recentCount').textContent = thisMonth;
+}
+
+function renderTable(candidates) {
+  const container = document.getElementById('tableContainer');
+
+  const rows = candidates.map(c => {
+    const score = parseFloat(c.finalScore);
+    const scoreClass = isNaN(score) ? '' : score <= 30 ? 'score-low' : score <= 60 ? 'score-mid' : 'score-high';
+    const statusClass = c.status === 'Complete' ? 'status-complete' : 'status-pending';
+
+    return `<tr>
+      <td>${c.date || '—'}</td>
+      <td><strong>${c.name || '—'}</strong></td>
+      <td>${c.email || '—'}</td>
+      <td>${c.position || '—'}</td>
+      <td>${c.assessor || '—'}</td>
+      <td><span class="score-badge ${scoreClass}">${c.finalScore || '—'}</span></td>
+      <td>${c.geminiScore ? `<span class="score-badge ${parseFloat(c.geminiScore) <= 30 ? 'score-low' : parseFloat(c.geminiScore) <= 60 ? 'score-mid' : 'score-high'}">${c.geminiScore}</span>` : '—'}</td>
+      <td><span class="status-badge ${statusClass}">${c.status || '—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Position</th>
+          <th>Assessor</th>
+          <th>Score</th>
+          <th>Gemini</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allCandidates.filter(c =>
+    (c.name || '').toLowerCase().includes(q) ||
+    (c.email || '').toLowerCase().includes(q) ||
+    (c.position || '').toLowerCase().includes(q)
+  );
+  renderTable(filtered);
+}
+
+loadCandidates();
+</script>
+
+</body>
+</html>
