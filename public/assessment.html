@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personality Assessment</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 30px 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 30px;
+    }
+    .header h1 { font-size: 24px; font-weight: 700; color: var(--primary); }
+    .header p { color: var(--muted); margin-top: 5px; }
+
+    /* Progress bar */
+    .progress-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--card);
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .progress-track {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .timer { font-weight: 600; color: var(--primary); }
+
+    /* Sections */
+    .section {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+    .section.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 6px;
+      color: var(--primary);
+    }
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .card .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* Read aloud text */
+    .read-aloud {
+      background: #eff6ff;
+      border-left: 4px solid var(--primary);
+      padding: 16px 20px;
+      margin: 12px 0;
+      border-radius: 0 8px 8px 0;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    /* Internal instruction */
+    .instruction {
+      background: #fefce8;
+      border-left: 4px solid var(--warning);
+      padding: 10px 16px;
+      margin: 10px 0;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      font-style: italic;
+      color: #92400e;
+    }
+
+    /* FC Block */
+    .fc-block {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .fc-block-header {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .fc-statement {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      margin: 6px 0;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .fc-statement:hover { border-color: var(--primary); }
+    .fc-label {
+      font-weight: 700;
+      color: var(--primary);
+      min-width: 24px;
+    }
+    .fc-text { flex: 1; font-size: 15px; }
+    .fc-rank-btns {
+      display: flex;
+      gap: 4px;
+    }
+    .fc-rank-btn {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .fc-rank-btn:hover { border-color: var(--primary); background: #eff6ff; }
+    .fc-rank-btn.selected-1 { background: var(--primary); color: white; border-color: var(--primary); }
+    .fc-rank-btn.selected-2 { background: #93c5fd; color: white; border-color: #93c5fd; }
+    .fc-rank-btn.selected-3 { background: #cbd5e1; color: white; border-color: #cbd5e1; }
+
+    /* SJT */
+    .sjt-scenario {
+      background: #f0fdf4;
+      border-left: 4px solid var(--success);
+      padding: 16px 20px;
+      margin: 12px 0;
+      border-radius: 0 8px 8px 0;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    .sjt-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sjt-option:hover { border-color: var(--primary); background: #eff6ff; }
+    .sjt-option.selected { border-color: var(--primary); background: #dbeafe; }
+    .sjt-option-label {
+      font-weight: 700;
+      color: var(--primary);
+      min-width: 24px;
+      margin-top: 1px;
+    }
+
+    /* STAR Interview */
+    .star-question {
+      font-size: 17px;
+      line-height: 1.7;
+    }
+    .star-probes {
+      margin: 12px 0;
+      padding: 10px 16px;
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+    .star-probes p { font-size: 13px; color: var(--muted); margin: 4px 0; }
+
+    .bars-selector {
+      display: flex;
+      gap: 8px;
+      margin: 16px 0;
+    }
+    .bars-btn {
+      flex: 1;
+      padding: 12px 8px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .bars-btn:hover { border-color: var(--primary); }
+    .bars-btn.selected { border-color: var(--primary); background: var(--primary); color: white; }
+    .bars-btn .bars-score { font-size: 22px; font-weight: 700; }
+    .bars-btn .bars-label { font-size: 10px; display: block; margin-top: 2px; }
+
+    .star-checks {
+      display: flex;
+      gap: 16px;
+      margin: 12px 0;
+    }
+    .star-check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+    .star-check input { width: 18px; height: 18px; cursor: pointer; }
+
+    .key-phrases {
+      width: 100%;
+      min-height: 60px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+    }
+    .key-phrases:focus { outline: none; border-color: var(--primary); }
+
+    /* Process checklist */
+    .process-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .process-item:last-child { border-bottom: none; }
+    .process-text { flex: 1; font-size: 14px; }
+    .process-btns { display: flex; gap: 4px; }
+    .process-btn {
+      padding: 6px 14px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: white;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .process-btn:hover { border-color: var(--primary); }
+    .process-btn.selected-yes { background: var(--success); color: white; border-color: var(--success); }
+    .process-btn.selected-no { background: var(--danger); color: white; border-color: var(--danger); }
+    .process-btn.selected-na { background: var(--muted); color: white; border-color: var(--muted); }
+
+    /* Red/Green flags */
+    .flag-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      font-size: 14px;
+    }
+    .flag-item input { width: 18px; height: 18px; cursor: pointer; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { background: #15803d; }
+    .btn-outline {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+    .btn-outline:hover { background: #eff6ff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Inputs */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+    .form-input:focus { outline: none; border-color: var(--primary); }
+
+    /* Results */
+    .score-big {
+      font-size: 72px;
+      font-weight: 800;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .score-label {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 30px;
+    }
+    .facet-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 8px 0;
+    }
+    .facet-name {
+      min-width: 160px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .facet-track {
+      flex: 1;
+      height: 24px;
+      background: var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .facet-fill {
+      height: 100%;
+      border-radius: 12px;
+      transition: width 1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+    }
+    .alert-box {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      font-size: 14px;
+      color: #991b1b;
+    }
+    .success-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      font-size: 14px;
+      color: #166534;
+    }
+
+    /* Gemini */
+    .gemini-section {
+      background: #faf5ff;
+      border: 2px solid #c084fc;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 24px;
+    }
+    .gemini-section h3 { color: #7c3aed; }
+
+    .narrative-box {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 12px 0;
+      white-space: pre-wrap;
+      font-size: 14px;
+      line-height: 1.7;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 40px;
+      font-size: 16px;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hidden { display: none !important; }
+
+    /* (Candidate View removed — assessor shares screen directly) */
+
+    /* Section counter badge */
+    .section-badge {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div class="progress-bar">
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+  </div>
+  <div class="progress-info">
+    <span id="progressLabel">Getting Started</span>
+    <span class="timer" id="timer">00:00</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ============ SECTION 0: Setup ============ -->
+  <div class="section active" data-section="0">
+    <div class="header">
+      <h1>Personality Assessment</h1>
+      <p>Work style and preferences evaluation</p>
+    </div>
+
+    <div class="card">
+      <h2>Session Setup</h2>
+      <div class="subtitle">Fill in before starting the assessment</div>
+
+      <div class="form-group">
+        <label>Candidate Name</label>
+        <input type="text" class="form-input" id="candidateName" placeholder="e.g. John Smith">
+      </div>
+      <div class="form-group">
+        <label>Candidate Email</label>
+        <input type="email" class="form-input" id="candidateEmail" placeholder="e.g. john@example.com">
+      </div>
+      <div class="form-group">
+        <label>Position Applied For</label>
+        <input type="text" class="form-input" id="position" placeholder="e.g. Project Manager">
+      </div>
+      <div class="form-group">
+        <label>Assessor Name</label>
+        <input type="text" class="form-input" id="assessorName" placeholder="Your name">
+      </div>
+      <!-- API key is configured on the server (.env file) -->
+    </div>
+
+    <div class="instruction">
+      Before starting: Enable Zoom recording and share your screen so the candidate can see the questions.
+    </div>
+
+    <div class="nav-buttons">
+      <div></div>
+      <button class="btn btn-primary" onclick="startAssessment()">Start Assessment &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 1: Opening ============ -->
+  <div class="section" data-section="1">
+    <div class="card">
+      <h2><span class="section-badge">1</span> Opening</h2>
+      <div class="subtitle">Read the following aloud to the candidate (~2 min)</div>
+
+      <div class="read-aloud">
+        Hello <strong id="candidateNameDisplay">[Candidate]</strong>, thank you for joining today. My name is <strong id="assessorNameDisplay">[Assessor]</strong>. Today we'll go through a structured assessment that helps us understand your work style and preferences. There are no right or wrong answers — we're interested in how you naturally approach work.
+      </div>
+
+      <div class="read-aloud">
+        The session will take about 45 minutes and has three parts: first, a set of statements where you'll rank which ones describe you best; second, some work scenarios where you'll tell me what you'd do; and third, a few interview questions about your past experiences.
+      </div>
+
+      <div class="read-aloud">
+        Do you have any questions before we begin?
+      </div>
+
+      <div class="instruction">
+        If the candidate asks what the assessment measures, say: "It looks at various aspects of your work style and personality." Do not mention conscientiousness specifically.
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="goToSection(0)">&larr; Back</button>
+      <button class="btn btn-primary" onclick="goToSection(2)">Begin Section A: Forced-Choice &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 2: Forced-Choice ============ -->
+  <div class="section" data-section="2">
+    <div class="card">
+      <h2><span class="section-badge">A</span> Forced-Choice Personality Inventory</h2>
+      <div class="subtitle">~10 minutes — Read each group of 3 statements aloud</div>
+
+      <div class="read-aloud">
+        In this section, I'm going to read you groups of three statements. For each group, tell me which statement is <strong>MOST like you</strong> and which is <strong>LEAST like you</strong>. The remaining one will be your middle choice.
+      </div>
+
+      <div class="instruction">
+        For each block: Read all three statements. Click the rank buttons (1st, 2nd, 3rd) based on the candidate's response. 1st = Most like me, 3rd = Least like me.
+      </div>
+    </div>
+
+    <div id="fcBlocks"></div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="goToSection(1)">&larr; Back</button>
+      <button class="btn btn-primary" onclick="goToSection(3)">Continue to Section B: Scenarios &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 3: SJT ============ -->
+  <div class="section" data-section="3">
+    <div class="card">
+      <h2><span class="section-badge">B</span> Situational Judgment Test</h2>
+      <div class="subtitle">~12 minutes — Read each scenario and options aloud</div>
+
+      <div class="read-aloud">
+        Now I'm going to describe some work situations. For each one, I'll give you four possible actions. Please tell me which action you would be <strong>MOST LIKELY</strong> to actually take — not what you think is the "right" answer, but what you would genuinely do.
+      </div>
+    </div>
+
+    <div id="sjtScenarios"></div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="goToSection(2)">&larr; Back</button>
+      <button class="btn btn-primary" onclick="goToSection(4)">Continue to Section C: Interview &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 4: STAR Interview ============ -->
+  <div class="section" data-section="4">
+    <div class="card">
+      <h2><span class="section-badge">C</span> Structured Behavioral Interview (STAR)</h2>
+      <div class="subtitle">~18 minutes — 6 questions, ~3 minutes each</div>
+
+      <div class="read-aloud">
+        Now I'll ask you a few questions about your past work experiences. For each one, please describe a specific situation — tell me what happened, what your role was, what you actually did, and what the result was.
+      </div>
+
+      <div class="instruction">
+        Allow ~3 minutes per question. Use follow-up probes if the answer is vague. Gemini will score from the transcript.
+      </div>
+    </div>
+
+    <div id="starQuestions"></div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="goToSection(3)">&larr; Back</button>
+      <button class="btn btn-primary" onclick="goToSection(5)">Continue to Closing &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 5: Closing + Process ============ -->
+  <div class="section" data-section="5">
+    <div class="card">
+      <h2>Closing</h2>
+
+      <div class="read-aloud">
+        That concludes our assessment. Thank you so much for your time and your thoughtful responses, <strong id="candidateNameClosing">[Candidate]</strong>. We'll be in touch with next steps. Do you have any final questions for me?
+      </div>
+
+      <div class="instruction">
+        End the Zoom recording. Then complete the checklists below from memory.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Process Behavior Checklist</h3>
+      <div class="subtitle">Complete immediately after the call ends</div>
+      <div id="processChecklist"></div>
+    </div>
+
+    <div class="card">
+      <h3>Red Flags Observed</h3>
+      <div id="redFlags"></div>
+    </div>
+
+    <div class="card">
+      <h3>Green Flags Observed</h3>
+      <div id="greenFlags"></div>
+    </div>
+
+    <div class="card">
+      <h3>Additional Notes</h3>
+      <textarea class="key-phrases" id="additionalNotes" rows="4" placeholder="Any additional observations..."></textarea>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-outline" onclick="goToSection(4)">&larr; Back</button>
+      <button class="btn btn-success" onclick="submitAssessment()">Submit &amp; Score &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ============ SECTION 6: Results ============ -->
+  <div class="section" data-section="6">
+    <div class="card">
+      <h2>Preliminary Score (FC + SJT only)</h2>
+      <div class="subtitle" id="resultsMeta"></div>
+      <div class="score-big" id="finalScoreDisplay" style="opacity:0.5">--</div>
+      <div class="score-label" id="scoreLabelDisplay">Paste transcript and run Gemini for final score</div>
+    </div>
+
+    <div class="card">
+      <h3>Facet Profile</h3>
+      <div id="facetBars"></div>
+    </div>
+
+    <div class="card">
+      <h3>Component Scores</h3>
+      <div id="componentScores"></div>
+    </div>
+
+    <div id="alertsSection" class="card hidden">
+      <h3>Consistency Alerts</h3>
+      <div id="alertsList"></div>
+    </div>
+
+    <!-- Gemini Analysis -->
+    <div class="gemini-section" id="geminiSection">
+      <h3>AI-Powered Deep Analysis (Gemini)</h3>
+      <div id="geminiStatus">
+        <div class="instruction">Paste the Zoom transcript below and click "Analyze with Gemini" to run the AI scoring.</div>
+      </div>
+      <div id="geminiResults" class="hidden"></div>
+    </div>
+
+    <div class="card" style="background:#e8f5e9;border:1px solid #4caf50">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:1.5em">✓</span>
+        <h3 style="margin:0;color:#2e7d32">Assessment Saved</h3>
+      </div>
+      <div class="subtitle" style="color:#333">All data has been automatically saved to the database. You can now go back to the dashboard or optionally run Gemini analysis.</div>
+    </div>
+
+    <div class="card" id="transcriptSection">
+      <h3>Optional: Run Gemini Analysis</h3>
+      <div class="subtitle">Paste the Zoom transcript and click "Analyze" to get the final AI-powered score. You can also do this later from the dashboard.</div>
+      <textarea class="key-phrases" id="transcriptInput" rows="6" placeholder="Paste Zoom transcript here..."></textarea>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="rerunGemini()">Analyze with Gemini</button>
+      </div>
+      <div id="saveStatus" style="margin-top:8px"></div>
+    </div>
+
+    <div id="sheetsStatus"></div>
+
+    <div class="nav-buttons">
+      <a href="/" class="btn btn-primary" style="text-decoration:none">Back to Dashboard</a>
+      <button class="btn btn-outline" onclick="exportReport()">Export JSON Report</button>
+      <button class="btn btn-outline" onclick="window.print()">Print Report</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+
+const FC_BLOCKS = [
+  { block: 1, statements: [
+    { label: 'A', text: 'I feel confident that I can handle most challenges that come my way at work.' },
+    { label: 'B', text: 'I enjoy meeting new people and starting conversations with strangers.' },
+    { label: 'C', text: 'I find it easy to forgive people who have let me down.' },
+  ]},
+  { block: 2, statements: [
+    { label: 'A', text: 'I frequently come up with imaginative ideas that others haven\'t considered.' },
+    { label: 'B', text: 'When something goes wrong, I trust my ability to figure out a solution.' },
+    { label: 'C', text: 'I tend to stay calm and composed even in highly stressful situations.' },
+  ]},
+  { block: 3, statements: [
+    { label: 'A', text: 'I keep my workspace, files, and tools neatly organized at all times.' },
+    { label: 'B', text: 'I get energized by being around groups of people.' },
+    { label: 'C', text: 'I enjoy exploring unconventional approaches and thinking outside the box.' },
+  ]},
+  { block: 4, statements: [
+    { label: 'A', text: 'I go out of my way to help colleagues even when it\'s not my responsibility.' },
+    { label: 'B', text: 'I rarely feel anxious or worried about things beyond my control.' },
+    { label: 'C', text: 'I create structured plans and follow systematic routines for recurring tasks.' },
+  ]},
+  { block: 5, statements: [
+    { label: 'A', text: 'I feel deeply uncomfortable if I break a promise, even a small one.' },
+    { label: 'B', text: 'I prefer to be the center of attention in social settings.' },
+    { label: 'C', text: 'I am fascinated by abstract ideas and philosophical discussions.' },
+  ]},
+  { block: 6, statements: [
+    { label: 'A', text: 'I bounce back quickly from setbacks without dwelling on negativity.' },
+    { label: 'B', text: 'If I discover an error \u2014 even one that nobody else would notice \u2014 I feel compelled to correct it.' },
+    { label: 'C', text: 'I naturally sense what other people are feeling and adjust my behavior accordingly.' },
+  ]},
+  { block: 7, statements: [
+    { label: 'A', text: 'I enjoy being part of a lively, fast-paced social environment.' },
+    { label: 'B', text: 'I set ambitious goals for myself and feel restless until I achieve them.' },
+    { label: 'C', text: 'I actively seek out viewpoints that challenge my own beliefs.' },
+  ]},
+  { block: 8, statements: [
+    { label: 'A', text: 'I am not easily offended and give people the benefit of the doubt.' },
+    { label: 'B', text: 'I handle unexpected bad news without panicking or overreacting.' },
+    { label: 'C', text: 'I push myself to exceed expectations, not just meet them.' },
+  ]},
+  { block: 9, statements: [
+    { label: 'A', text: 'Once I start a task, I keep working on it until it\'s fully complete \u2014 even if it\'s tedious.' },
+    { label: 'B', text: 'I love trying new foods, music, and cultural experiences.' },
+    { label: 'C', text: 'I\'m the kind of person who brings energy and enthusiasm to a room.' },
+  ]},
+  { block: 10, statements: [
+    { label: 'A', text: 'I quickly pick up on when someone is upset, even if they don\'t say anything.' },
+    { label: 'B', text: 'I can focus on a boring, repetitive task for hours without needing a break or distraction.' },
+    { label: 'C', text: 'I don\'t take criticism personally \u2014 I see it as useful information.' },
+  ]},
+  { block: 11, statements: [
+    { label: 'A', text: 'I like to take charge and lead group discussions.' },
+    { label: 'B', text: 'I think through the potential consequences of a decision before committing to it.' },
+    { label: 'C', text: 'I enjoy working on artistic or creative projects in my free time.' },
+  ]},
+  { block: 12, statements: [
+    { label: 'A', text: 'Before acting on an impulse, I pause and consider whether it\'s the right move.' },
+    { label: 'B', text: 'I tend to trust people\'s good intentions rather than assume the worst.' },
+    { label: 'C', text: 'I recover quickly from embarrassing or uncomfortable social situations.' },
+  ]},
+];
+
+const SJT_SCENARIOS = [
+  { num: 1, scenario: 'You have just taken over a role from a colleague who left suddenly. Their project files are scattered across multiple folders \u2014 some on shared drives, some on their desktop. There are no notes explaining the file naming system. Your manager needs a status update by end of week.', options: [
+    { label: 'A', text: 'Start working on the deliverables immediately using whatever files you can find, and sort through the mess later.' },
+    { label: 'B', text: 'Spend the first day creating a complete inventory of all files, renaming and organizing them into a logical structure before doing any deliverable work.' },
+    { label: 'C', text: 'Ask a colleague who worked with the previous person to walk you through the files and point out what\'s important.' },
+    { label: 'D', text: 'Email your manager explaining that the files are disorganized and ask for a deadline extension.' },
+  ]},
+  { num: 2, scenario: 'You are reviewing a monthly report that your team submits to a key client. You notice that a data point from last month\'s report was slightly incorrect \u2014 the error went unnoticed and the client made no complaint. Correcting it now would mean admitting the previous mistake.', options: [
+    { label: 'A', text: 'Leave it alone \u2014 the client didn\'t notice, and bringing it up now could damage trust.' },
+    { label: 'B', text: 'Quietly fix the number in this month\'s report without mentioning the previous error.' },
+    { label: 'C', text: 'Inform your manager about the error and suggest sending a correction notice to the client, along with updated data.' },
+    { label: 'D', text: 'Mention it casually to a colleague and let them decide whether to escalate.' },
+  ]},
+  { num: 3, scenario: 'You have completed a project ahead of schedule. Your deliverable meets all the stated requirements and your manager has approved it. However, during the final review, you thought of two additional improvements that would make the output significantly better \u2014 but implementing them would take an extra 3 days of work that nobody asked for.', options: [
+    { label: 'A', text: 'Submit the approved version. It meets requirements, and you have other tasks waiting.' },
+    { label: 'B', text: 'Implement both improvements without telling anyone, then submit the enhanced version.' },
+    { label: 'C', text: 'Propose the improvements to your manager, explain the value they\'d add, and offer to implement them within 3 days \u2014 asking them to decide.' },
+    { label: 'D', text: 'Make a note of the improvements for the next project iteration and move on.' },
+  ]},
+  { num: 4, scenario: 'You are in the middle of a long, tedious data-entry task that needs to be completed by end of day. It\'s mid-afternoon, you\'re losing focus, and a group of colleagues invites you to join them for an extended coffee break. They say: "You can finish it later tonight \u2014 nobody will know."', options: [
+    { label: 'A', text: 'Join them for 15 minutes, then return and finish the task.' },
+    { label: 'B', text: 'Decline the break and push through to finish the task first, then take a break.' },
+    { label: 'C', text: 'Join them and plan to finish the task from home later that evening.' },
+    { label: 'D', text: 'Join them briefly but set a timer on your phone for 10 minutes to make sure you get back.' },
+  ]},
+  { num: 5, scenario: 'Your company is considering adopting a new project management tool. Your manager asks for your recommendation by tomorrow morning. You\'ve heard good things about one tool from a friend at another company, and you could quickly recommend it now. But you haven\'t personally tested any alternatives.', options: [
+    { label: 'A', text: 'Recommend the tool your friend mentioned \u2014 you trust their judgment and it saves time.' },
+    { label: 'B', text: 'Ask your manager for 2\u20133 extra days to test the top 3 options and prepare a comparison document.' },
+    { label: 'C', text: 'Recommend the friend\'s tool but mention that you haven\'t personally tested alternatives, so there might be better options.' },
+    { label: 'D', text: 'Ask colleagues in your team what tools they\'ve used and go with the majority opinion.' },
+  ]},
+  { num: 6, scenario: 'You\'ve been assigned to lead a presentation to a client on a topic you know well. Two days before the meeting, your manager adds a section on a subject you\'re less familiar with. You have 48 hours.', options: [
+    { label: 'A', text: 'Wing it \u2014 you know enough about the general area to speak credibly.' },
+    { label: 'B', text: 'Spend the next 48 hours researching the new topic thoroughly, preparing detailed notes, and rehearsing that section specifically.' },
+    { label: 'C', text: 'Ask a colleague who knows the topic to co-present that section with you.' },
+    { label: 'D', text: 'Tell your manager you\'re not comfortable presenting on a topic you don\'t know well and ask to remove that section.' },
+  ]},
+  { num: 7, scenario: 'It\'s Friday at 4:30 PM. You discover a small bug in code you shipped earlier this week. The bug affects an internal dashboard that only 3 people use, and none of them have noticed. Your weekend plans start in 90 minutes.', options: [
+    { label: 'A', text: 'Log the bug in the tracking system with full details and fix it first thing Monday morning.' },
+    { label: 'B', text: 'Fix the bug now before leaving, even if it means being 30 minutes late to your plans.' },
+    { label: 'C', text: 'Leave it \u2014 if nobody noticed all week, it\'s clearly not critical.' },
+    { label: 'D', text: 'Send a quick Slack message to the 3 affected users alerting them about the issue, and fix it Monday.' },
+  ]},
+  { num: 8, scenario: 'You receive your annual performance review. You scored "Meets Expectations" across all categories \u2014 a perfectly acceptable rating. Your manager says they\'re satisfied with your work.', options: [
+    { label: 'A', text: 'Feel satisfied \u2014 you met all expectations, which is what you were hired to do.' },
+    { label: 'B', text: 'Ask your manager what specific behaviors or results would move you to "Exceeds Expectations" and create a development plan with measurable milestones.' },
+    { label: 'C', text: 'Feel slightly disappointed but don\'t bring it up, and try harder next year.' },
+    { label: 'D', text: 'Ask your manager for more challenging projects or responsibilities to grow.' },
+  ]},
+];
+
+const STAR_QUESTIONS = [
+  { facet: 'C1', name: 'Competence', question: 'Tell me about a time you were assigned a task or project that was outside your area of expertise. How did you approach it, and what was the outcome?',
+    probes: ['What specific steps did you take to get up to speed?', 'How did you know when you were ready to execute?'] },
+  { facet: 'C2', name: 'Order', question: 'Describe how you organize your work when you\'re juggling multiple projects or tasks with different deadlines. Walk me through your actual system.',
+    probes: ['What happens when a new urgent task gets added to your plate?', 'Can you describe your actual tool or system in detail?'] },
+  { facet: 'C3', name: 'Dutifulness', question: 'Tell me about a time you had to deliver bad news or admit a mistake to a manager or client. What exactly did you do, and when did you do it?',
+    probes: ['How long after discovering the problem did you report it?', 'What would have happened if you hadn\'t said anything?'] },
+  { facet: 'C4', name: 'Achievement Striving', question: 'Tell me about a goal you set for yourself that went beyond what was required or expected of you. Why did you pursue it, and what happened?',
+    probes: ['Did anyone ask you to do this, or was it entirely self-initiated?', 'How did you measure your progress?'] },
+  { facet: 'C5', name: 'Self-Discipline', question: 'Tell me about a time you had to work on something that was extremely boring, repetitive, or tedious \u2014 something you really didn\'t want to do. How did you get through it?',
+    probes: ['What specifically helped you maintain focus?', 'Did you consider cutting corners? What stopped you?'] },
+  { facet: 'C6', name: 'Deliberation', question: 'Describe a high-stakes decision you had to make at work. Walk me through your decision-making process \u2014 how did you evaluate your options before choosing?',
+    probes: ['What alternatives did you consider and reject?', 'Did you consult anyone? How did you weigh conflicting advice?'] },
+];
+
+const PROCESS_ITEMS = [
+  { id: 'P1', text: 'Candidate joined the Zoom call on time or early' },
+  { id: 'P2', text: 'Candidate\'s background/environment appeared organized' },
+  { id: 'P3', text: 'Candidate asked clarifying questions before answering (at least once)' },
+  { id: 'P4', text: 'Candidate\'s responses were structured and organized (not rambling)' },
+  { id: 'P5', text: 'Candidate paused to think before answering (deliberation) vs. blurting' },
+  { id: 'P6', text: 'Candidate referenced specific details (names, dates, numbers, metrics)' },
+  { id: 'P7', text: 'Candidate admitted uncertainty honestly (said "I don\'t know" at least once)' },
+  { id: 'P8', text: 'Candidate stayed focused \u2014 no visible distractions, phone-checking' },
+];
+
+const RED_FLAGS = [
+  'Blamed others for failures without acknowledging own role',
+  'Could not provide any specific example when asked',
+  'Described cutting corners as efficient/smart',
+  'Showed irritation at detailed questions',
+  'Made decisions without considering alternatives',
+  'Described only manager-set goals (no self-initiated goals)',
+  'Was late to the session without prior notification',
+];
+
+const GREEN_FLAGS = [
+  'Spontaneously described a system they built for personal productivity',
+  'Admitted a mistake unprompted and described what they learned',
+  'Described iterating/improving their own processes over time',
+  'Asked clarifying questions about scenarios before answering',
+  'Referenced specific numbers/metrics to describe outcomes',
+  'Described teaching or documenting processes for others',
+];
+
+const FACET_NAMES = {
+  C1: 'Competence', C2: 'Order', C3: 'Dutifulness',
+  C4: 'Achievement Striving', C5: 'Self-Discipline', C6: 'Deliberation',
+};
+
+// ============================================================
+// STATE
+// ============================================================
+
+let currentSection = 0;
+let timerInterval = null;
+let startTime = null;
+
+const state = {
+  fc: {},    // { 1: { A: 1, B: 2, C: 3 }, ... }
+  sjt: {},   // { 1: 'B', 2: 'C', ... }
+  interview: {}, // { C1: 3, C2: 4, ... }
+  starChecks: {}, // { C1: { S: true, T: true, A: false, R: true }, ... }
+  keyPhrases: {}, // { C1: "...", ... }
+  process: {}, // { P1: 'yes', P2: 'no', ... }
+  redFlags: [],
+  greenFlags: [],
+  notes: '',
+};
+
+// ============================================================
+// INIT
+// ============================================================
+
+function init() {
+  renderFC();
+  renderSJT();
+  renderSTAR();
+  renderProcess();
+  renderFlags();
+}
+
+function renderFC() {
+  const container = document.getElementById('fcBlocks');
+  container.innerHTML = FC_BLOCKS.map(block => `
+    <div class="fc-block">
+      <div class="fc-block-header">Block ${block.block} of 12</div>
+      ${block.statements.map(s => `
+        <div class="fc-statement" id="fc-${block.block}-${s.label}">
+          <span class="fc-label">${s.label}</span>
+          <span class="fc-text">${s.text}</span>
+          <div class="fc-rank-btns">
+            ${[1,2,3].map(r => `
+              <button class="fc-rank-btn" data-block="${block.block}" data-stmt="${s.label}" data-rank="${r}"
+                      onclick="setFCRank(${block.block}, '${s.label}', ${r})"
+                      title="${r === 1 ? 'Most like me' : r === 3 ? 'Least like me' : 'Middle'}">${r === 1 ? '1st' : r === 2 ? '2nd' : '3rd'}</button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function renderSJT() {
+  const container = document.getElementById('sjtScenarios');
+  container.innerHTML = SJT_SCENARIOS.map(s => `
+    <div class="card">
+      <h3>Scenario ${s.num} of 8</h3>
+      <div class="sjt-scenario">${s.scenario}</div>
+      ${s.options.map(o => `
+        <div class="sjt-option" id="sjt-${s.num}-${o.label}" onclick="setSJT(${s.num}, '${o.label}')">
+          <span class="sjt-option-label">${o.label}</span>
+          <span>${o.text}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function renderSTAR() {
+  const container = document.getElementById('starQuestions');
+  container.innerHTML = STAR_QUESTIONS.map((q, i) => `
+    <div class="card">
+      <h3>Question ${i+1} of 6</h3>
+      <div class="read-aloud star-question">${q.question}</div>
+      <div class="star-probes">
+        <p><strong>Follow-up probes (if answer is vague):</strong></p>
+        ${q.probes.map(p => `<p>\u2022 "${p}"</p>`).join('')}
+      </div>
+      <div class="assessor-only" style="margin-top:8px">
+        <label style="font-size:13px;font-weight:600;color:var(--muted)">Notes (optional)</label>
+        <textarea class="key-phrases" placeholder="Quick notes..."
+                  onchange="state.keyPhrases['${q.facet}'] = this.value"></textarea>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderProcess() {
+  const container = document.getElementById('processChecklist');
+  container.innerHTML = PROCESS_ITEMS.map(item => `
+    <div class="process-item">
+      <span class="process-text">${item.text}</span>
+      <div class="process-btns">
+        <button class="process-btn" onclick="setProcess('${item.id}', 'yes', this)">Yes</button>
+        <button class="process-btn" onclick="setProcess('${item.id}', 'no', this)">No</button>
+        <button class="process-btn" onclick="setProcess('${item.id}', 'na', this)">N/A</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderFlags() {
+  document.getElementById('redFlags').innerHTML = RED_FLAGS.map((f, i) => `
+    <div class="flag-item">
+      <input type="checkbox" onchange="toggleFlag('red', ${i}, this.checked)">
+      <span>${f}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('greenFlags').innerHTML = GREEN_FLAGS.map((f, i) => `
+    <div class="flag-item">
+      <input type="checkbox" onchange="toggleFlag('green', ${i}, this.checked)">
+      <span>${f}</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// INTERACTIONS
+// ============================================================
+
+function setFCRank(block, stmt, rank) {
+  if (!state.fc[block]) state.fc[block] = {};
+
+  // Remove this rank from other statements in same block
+  for (const s of ['A', 'B', 'C']) {
+    if (state.fc[block][s] === rank && s !== stmt) {
+      state.fc[block][s] = null;
+      updateFCButtons(block, s);
+    }
+  }
+
+  // If clicking same rank again, toggle off
+  if (state.fc[block][stmt] === rank) {
+    state.fc[block][stmt] = null;
+  } else {
+    state.fc[block][stmt] = rank;
+  }
+
+  updateFCButtons(block, stmt);
+}
+
+function updateFCButtons(block, stmt) {
+  const btns = document.querySelectorAll(`[data-block="${block}"][data-stmt="${stmt}"]`);
+  btns.forEach(btn => {
+    const r = parseInt(btn.dataset.rank);
+    btn.className = 'fc-rank-btn';
+    if (state.fc[block]?.[stmt] === r) {
+      btn.classList.add(`selected-${r}`);
+    }
+  });
+}
+
+function setSJT(scenario, option) {
+  state.sjt[scenario] = option;
+  const allOpts = document.querySelectorAll(`[id^="sjt-${scenario}-"]`);
+  allOpts.forEach(el => el.classList.remove('selected'));
+  document.getElementById(`sjt-${scenario}-${option}`).classList.add('selected');
+}
+
+function setBARS(facet, score) {
+  state.interview[facet] = score;
+  const btns = document.querySelectorAll(`[data-facet="${facet}"]`);
+  btns.forEach(btn => {
+    btn.classList.toggle('selected', parseInt(btn.dataset.score) === score);
+  });
+}
+
+function setStarCheck(facet, element, checked) {
+  if (!state.starChecks[facet]) state.starChecks[facet] = {};
+  state.starChecks[facet][element] = checked;
+}
+
+function setProcess(id, value, btn) {
+  state.process[id] = value;
+  const siblings = btn.parentElement.querySelectorAll('.process-btn');
+  siblings.forEach(b => b.className = 'process-btn');
+  btn.classList.add(`selected-${value}`);
+}
+
+function toggleFlag(type, index, checked) {
+  if (type === 'red') {
+    if (checked) state.redFlags.push(RED_FLAGS[index]);
+    else state.redFlags = state.redFlags.filter(f => f !== RED_FLAGS[index]);
+  } else {
+    if (checked) state.greenFlags.push(GREEN_FLAGS[index]);
+    else state.greenFlags = state.greenFlags.filter(f => f !== GREEN_FLAGS[index]);
+  }
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+
+function goToSection(n) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelector(`[data-section="${n}"]`).classList.add('active');
+  currentSection = n;
+  window.scrollTo(0, 0);
+  updateProgress();
+}
+
+function startAssessment() {
+  const name = document.getElementById('candidateName').value.trim();
+  const email = document.getElementById('candidateEmail').value.trim();
+  const pos = document.getElementById('position').value.trim();
+  const assessor = document.getElementById('assessorName').value.trim();
+
+  if (!name || !email || !pos || !assessor) {
+    alert('Please fill in all fields before starting.');
+    return;
+  }
+
+  document.getElementById('candidateNameDisplay').textContent = name;
+  document.getElementById('assessorNameDisplay').textContent = assessor;
+  document.getElementById('candidateNameClosing').textContent = name;
+
+  startTime = Date.now();
+  timerInterval = setInterval(updateTimer, 1000);
+
+  const isQuick = new URLSearchParams(window.location.search).get('mode') === 'quick';
+  if (isQuick) {
+    goToSection(4); // Skip to interview
+  } else {
+    goToSection(1);
+  }
+}
+
+const isQuickMode = new URLSearchParams(window.location.search).get('mode') === 'quick';
+
+function updateProgress() {
+  const totalSections = isQuickMode ? 3 : 6;
+  const sectionIndex = isQuickMode ? Math.max(0, currentSection - 3) : currentSection;
+  const pct = Math.round((sectionIndex / totalSections) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  const labels = isQuickMode
+    ? { 0: 'Setup', 4: 'Interview', 5: 'Closing & Process', 6: 'Results' }
+    : { 0: 'Setup', 1: 'Opening', 2: 'Section A: Forced-Choice', 3: 'Section B: Scenarios',
+        4: 'Section C: Interview', 5: 'Closing & Process', 6: 'Results' };
+  document.getElementById('progressLabel').textContent = labels[currentSection] || '';
+}
+
+function updateTimer() {
+  if (!startTime) return;
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const sec = String(elapsed % 60).padStart(2, '0');
+  document.getElementById('timer').textContent = `${min}:${sec}`;
+}
+
+// ============================================================
+// SUBMIT & SCORE
+// ============================================================
+
+async function submitAssessment() {
+  state.notes = document.getElementById('additionalNotes').value;
+
+  if (isQuickMode) {
+    // Quick mode — skip algorithmic scoring, go straight to Gemini section
+    goToSection(6);
+    displayQuickResults();
+    return;
+  }
+
+  // Set default interview scores (Gemini will do real scoring from transcript)
+  for (const facet of ['C1','C2','C3','C4','C5','C6']) {
+    if (!state.interview[facet]) state.interview[facet] = 3; // default mid
+  }
+
+  // Local scoring (preliminary — Gemini provides the real analysis)
+  let data;
+  try {
+    const res = await fetch('/api/score-local', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fc: state.fc,
+        sjt: state.sjt,
+        interview: state.interview,
+        process: state.process,
+      }),
+    });
+    data = await res.json();
+    displayResults(data);
+  } catch (err) {
+    console.error('Local scoring failed:', err);
+    alert('Scoring failed. Please check the server is running.');
+    return;
+  }
+
+  goToSection(6);
+
+  // Save to Google Sheets
+  saveToSheets(data.finalScore, data.blended);
+
+  // Gemini scoring — wait for transcript to be pasted manually
+}
+
+function displayQuickResults() {
+  const name = document.getElementById('candidateName').value;
+  const email = document.getElementById('candidateEmail').value;
+  const pos = document.getElementById('position').value;
+  document.getElementById('resultsMeta').textContent = `${name} (${email}) — ${pos}`;
+  document.getElementById('finalScoreDisplay').textContent = '—';
+  document.getElementById('finalScoreDisplay').style.opacity = '0.3';
+  document.getElementById('scoreLabelDisplay').textContent = 'Interview Only — paste transcript and send to Gemini for scoring';
+
+  // Hide the preliminary score cards
+  document.getElementById('facetBars').parentElement.style.display = 'none';
+  document.getElementById('componentScores').parentElement.style.display = 'none';
+  document.getElementById('alertsSection').style.display = 'none';
+
+  // Save to Google Sheets (no score yet)
+  saveToSheets(null, {});
+}
+
+function displayResults(data) {
+  const name = document.getElementById('candidateName').value;
+  const email = document.getElementById('candidateEmail').value;
+  const pos = document.getElementById('position').value;
+  document.getElementById('resultsMeta').textContent = `${name} (${email}) \u2014 ${pos}`;
+
+  // Final score
+  const score = data.finalScore;
+  const el = document.getElementById('finalScoreDisplay');
+  el.textContent = score;
+  el.style.color = score <= 30 ? 'var(--danger)' : score <= 60 ? 'var(--warning)' : 'var(--success)';
+
+  const labels = {
+    0: 'Very Low \u2014 Do not recommend', 15: 'Very Low \u2014 Do not recommend',
+    30: 'Low \u2014 Significant concerns', 45: 'Below Average \u2014 Notable gaps',
+    60: 'Average \u2014 Adequate with supervision', 75: 'Above Average \u2014 Recommended',
+    85: 'High \u2014 Highly recommended', 95: 'Very High \u2014 Exceptional',
+  };
+  let label = 'Very Low \u2014 Do not recommend';
+  for (const [threshold, l] of Object.entries(labels)) {
+    if (score >= parseInt(threshold)) label = l;
+  }
+  document.getElementById('scoreLabelDisplay').textContent = label;
+
+  // Facet bars
+  const facetBars = document.getElementById('facetBars');
+  facetBars.innerHTML = Object.entries(data.blended).map(([facet, val]) => {
+    const color = val <= 30 ? 'var(--danger)' : val <= 60 ? 'var(--warning)' : 'var(--success)';
+    return `
+      <div class="facet-bar">
+        <span class="facet-name">${FACET_NAMES[facet]}</span>
+        <div class="facet-track">
+          <div class="facet-fill" style="width:${val}%;background:${color}">${Math.round(val)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Component scores
+  const comp = document.getElementById('componentScores');
+  comp.innerHTML = `
+    <table style="width:100%;font-size:14px;border-collapse:collapse">
+      <tr style="background:var(--bg)">
+        <th style="text-align:left;padding:8px">Facet</th>
+        <th style="padding:8px">FC (20%)</th>
+        <th style="padding:8px">SJT (25%)</th>
+        <th style="padding:8px">Interview (55%)</th>
+        <th style="padding:8px;font-weight:700">Blended</th>
+      </tr>
+      ${Object.keys(FACET_NAMES).map(f => `
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:8px">${FACET_NAMES[f]}</td>
+          <td style="padding:8px;text-align:center">${data.fc.facetScores[f]}</td>
+          <td style="padding:8px;text-align:center">${data.sjt.facetScores[f]}</td>
+          <td style="padding:8px;text-align:center">${data.interview[f]}</td>
+          <td style="padding:8px;text-align:center;font-weight:700">${data.blended[f]}</td>
+        </tr>
+      `).join('')}
+      <tr style="background:var(--bg);font-weight:700">
+        <td style="padding:8px" colspan="4">Raw Composite</td>
+        <td style="padding:8px;text-align:center">${data.rawComposite}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px" colspan="4">Process Behavior Bonus</td>
+        <td style="padding:8px;text-align:center">${data.process.bonus >= 0 ? '+' : ''}${data.process.bonus}</td>
+      </tr>
+      <tr style="background:var(--primary);color:white;font-weight:700">
+        <td style="padding:8px" colspan="4">FINAL SCORE</td>
+        <td style="padding:8px;text-align:center">${data.finalScore}</td>
+      </tr>
+    </table>
+  `;
+
+  // Alerts
+  if (data.alerts.length > 0) {
+    document.getElementById('alertsSection').classList.remove('hidden');
+    document.getElementById('alertsList').innerHTML = data.alerts.map(a => `
+      <div class="alert-box">
+        <strong>${a.facet} (${FACET_NAMES[a.facet]}):</strong>
+        FC=${a.fc}, SJT=${a.sjt}, Interview=${a.interview} (spread: ${a.spread} points)
+      </div>
+    `).join('');
+  }
+
+  window._localResults = data;
+}
+
+async function runGeminiAnalysis() {
+  const geminiStatus = document.getElementById('geminiStatus');
+  const geminiResults = document.getElementById('geminiResults');
+
+  geminiStatus.innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing with Gemini... This may take 30-60 seconds.</div>';
+  geminiResults.classList.add('hidden');
+
+  const transcript = document.getElementById('transcriptInput')?.value || '';
+
+  try {
+    const res = await fetch('/api/score-gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        answerSheetData: {
+          assessmentType: isQuickMode ? 'Quick (Interview Only)' : 'Full',
+          candidate: document.getElementById('candidateName').value,
+          candidateEmail: document.getElementById('candidateEmail').value,
+          position: document.getElementById('position').value,
+          assessor: document.getElementById('assessorName').value,
+          fc: state.fc,
+          sjt: state.sjt,
+          interview: state.interview,
+          starChecks: state.starChecks,
+          keyPhrases: state.keyPhrases,
+          process: state.process,
+          redFlags: state.redFlags,
+          greenFlags: state.greenFlags,
+          notes: state.notes,
+        },
+        transcript,
+        candidateName: document.getElementById('candidateName').value,
+        position: document.getElementById('position').value,
+        assessorName: document.getElementById('assessorName').value,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      geminiStatus.innerHTML = `<div class="alert-box">Gemini Error: ${data.error}. ${data.details || ''}</div>`;
+      return;
+    }
+
+    geminiStatus.innerHTML = '<div class="success-box">Gemini analysis complete!</div>';
+    geminiResults.classList.remove('hidden');
+
+    if (data.geminiReport) {
+      geminiResults.innerHTML = `
+        <h4 style="margin:16px 0 8px">Gemini Score: <span style="font-size:24px;color:var(--primary)">${data.geminiReport.final_score ?? 'N/A'}</span></h4>
+        ${data.geminiReport.narrative_summary ? `<div class="narrative-box">${data.geminiReport.narrative_summary}</div>` : ''}
+        ${data.geminiReport.hiring_recommendation ? `<div class="narrative-box"><strong>Hiring Recommendation:</strong> ${data.geminiReport.hiring_recommendation}</div>` : ''}
+        <details style="margin-top:12px">
+          <summary style="cursor:pointer;font-weight:600;color:var(--muted)">Full Gemini JSON Response</summary>
+          <pre class="narrative-box" style="font-size:12px">${JSON.stringify(data.geminiReport, null, 2)}</pre>
+        </details>
+      `;
+    } else {
+      geminiResults.innerHTML = `
+        <details open style="margin-top:12px">
+          <summary style="cursor:pointer;font-weight:600">Raw Gemini Response</summary>
+          <div class="narrative-box">${data.rawResponse}</div>
+        </details>
+      `;
+    }
+
+    window._geminiResults = data;
+  } catch (err) {
+    geminiStatus.innerHTML = `<div class="alert-box">Failed to connect to Gemini: ${err.message}</div>`;
+  }
+}
+
+function rerunGemini() {
+  runGeminiAnalysis();
+}
+
+async function saveForLater() {
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.innerHTML = '<div class="loading"><div class="spinner"></div>Saving...</div>';
+  try {
+    const res = await fetch('/api/save-assessment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        candidateEmail: document.getElementById('candidateEmail').value,
+        data: {
+          candidateName: document.getElementById('candidateName').value,
+          candidateEmail: document.getElementById('candidateEmail').value,
+          position: document.getElementById('position').value,
+          assessorName: document.getElementById('assessorName').value,
+          fc: state.fc,
+          sjt: state.sjt,
+          interview: state.interview,
+          starChecks: state.starChecks,
+          keyPhrases: state.keyPhrases,
+          process: state.process,
+          redFlags: state.redFlags,
+          greenFlags: state.greenFlags,
+          notes: state.notes,
+        },
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      statusEl.innerHTML = '<div class="success-box">Assessment saved! You can paste the transcript and send to Gemini later from the dashboard.</div>';
+    } else {
+      statusEl.innerHTML = `<div class="alert-box">${data.error}</div>`;
+    }
+  } catch (err) {
+    statusEl.innerHTML = `<div class="alert-box">Failed to save: ${err.message}</div>`;
+  }
+}
+
+async function saveToSheets(finalScore, blended) {
+  const statusEl = document.getElementById('sheetsStatus');
+  statusEl.innerHTML = '<div class="loading"><div class="spinner"></div>Saving to Google Sheets...</div>';
+  try {
+    const res = await fetch('/api/save-candidate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        candidateName: document.getElementById('candidateName').value,
+        candidateEmail: document.getElementById('candidateEmail').value,
+        position: document.getElementById('position').value,
+        assessorName: document.getElementById('assessorName').value,
+        finalScore,
+        facetScores: blended,
+        date: new Date().toISOString(),
+        assessmentType: isQuickMode ? 'Quick' : 'Full',
+        answerData: {
+          fc: state.fc,
+          sjt: state.sjt,
+          process: state.process,
+          keyPhrases: state.keyPhrases,
+          redFlags: state.redFlags,
+          greenFlags: state.greenFlags,
+          notes: state.notes,
+        },
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      statusEl.innerHTML = '<div class="success-box">Saved to Google Sheets!</div>';
+    } else {
+      statusEl.innerHTML = `<div class="alert-box">Google Sheets: ${data.error || 'Failed to save'}</div>`;
+    }
+  } catch (err) {
+    statusEl.innerHTML = `<div class="alert-box">Google Sheets not configured. Results saved locally only.</div>`;
+  }
+}
+
+function exportReport() {
+  const report = {
+    candidate: document.getElementById('candidateName').value,
+    candidateEmail: document.getElementById('candidateEmail').value,
+    position: document.getElementById('position').value,
+    assessor: document.getElementById('assessorName').value,
+    date: new Date().toISOString(),
+    responses: state,
+    localScoring: window._localResults,
+    geminiScoring: window._geminiResults?.geminiReport || null,
+  };
+
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `assessment_${report.candidate.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Init
+init();
+</script>
+
+</body>
+</html>

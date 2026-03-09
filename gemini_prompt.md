@@ -55,6 +55,16 @@ Paste the Zoom call transcript below:
 
 ---
 
+## QUICK ASSESSMENT MODE
+
+**IMPORTANT:** If the `assessmentType` field in the answer sheet data is "Quick (Interview Only)", the candidate was only given the 6 behavioral interview questions — NO Forced-Choice (FC) and NO Situational Judgment Test (SJT) were administered. In this case:
+- **Skip Steps 1 and 2 entirely** (FC and SJT scoring)
+- **Score ONLY the interview (Step 3)** using the transcript and BARS anchors
+- **Skip the blending formula** — the interview scores ARE the final facet scores
+- **Do NOT penalize the candidate** for missing FC/SJT data — this was by design, not a deficiency
+
+---
+
 ## SCORING WORKFLOW
 
 Follow these steps IN ORDER. Do not skip steps. Show your work for each step.
