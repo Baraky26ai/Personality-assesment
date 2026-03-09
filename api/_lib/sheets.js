@@ -1,5 +1,4 @@
-// Shared Google Sheets helper
-const { GoogleSpreadsheet } = require('google-spreadsheet');
+// Shared Google Sheets helper — uses dynamic import for ESM compatibility
 const { JWT } = require('google-auth-library');
 
 let sheetsDoc = null;
@@ -19,6 +18,7 @@ async function getSheet() {
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
 
+  const { GoogleSpreadsheet } = await import('google-spreadsheet');
   sheetsDoc = new GoogleSpreadsheet(sheetId, auth);
   await sheetsDoc.loadInfo();
 
@@ -29,7 +29,7 @@ async function getSheet() {
       headerValues: [
         'Date', 'Candidate Name', 'Email', 'Position',
         'Assessor', 'Final Score', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6',
-        'Gemini Score', 'Status'
+        'Gemini Score', 'Status', 'Type', 'AnswerData'
       ],
     });
   }
