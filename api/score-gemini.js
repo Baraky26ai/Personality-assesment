@@ -12,7 +12,7 @@ const geminiPromptTemplate = fs.readFileSync(
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { answerSheetData, transcript, candidateName, position, assessorName } = req.body;
+  const { answerSheetData, transcript, candidateName, position, assessorName, customPrompt } = req.body;
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -28,7 +28,9 @@ module.exports = async function handler(req, res) {
       .replace('[PASTE ANSWER SHEET DATA HERE]', answerSheetFormatted)
       .replace('[PASTE ZOOM TRANSCRIPT HERE]', transcript || 'No transcript provided. Score based on answer sheet data only.');
 
-    const result = await model.generateContent(prompt);
+    // Use custom prompt if provided (edited by assessor), otherwise use built prompt
+    const finalPrompt = customPrompt || prompt;
+    const result = await model.generateContent(finalPrompt);
     const text = result.response.text();
 
     let jsonResult = null;

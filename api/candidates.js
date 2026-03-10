@@ -10,16 +10,22 @@ module.exports = async function handler(req, res) {
     const sheet = doc.sheetsByTitle['Candidates'];
     const rows = await sheet.getRows();
 
-    const candidates = rows.map(row => ({
-      date: row.get('Date'),
-      name: row.get('Candidate Name'),
-      email: row.get('Email'),
-      position: row.get('Position'),
-      assessor: row.get('Assessor'),
-      finalScore: row.get('Final Score'),
-      geminiScore: row.get('Gemini Score'),
-      status: row.get('Status'),
-    }));
+    const candidates = rows.map(row => {
+      let answerData = null;
+      try { answerData = JSON.parse(row.get('AnswerData') || 'null'); } catch (e) {}
+      return {
+        date: row.get('Date'),
+        name: row.get('Candidate Name'),
+        email: row.get('Email'),
+        position: row.get('Position'),
+        assessor: row.get('Assessor'),
+        finalScore: row.get('Final Score'),
+        geminiScore: row.get('Gemini Score'),
+        status: row.get('Status'),
+        type: row.get('Type') || 'Full',
+        answerData,
+      };
+    });
 
     res.json({ success: true, candidates });
   } catch (err) {

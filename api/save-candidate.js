@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
     const doc = await getSheet();
     if (!doc) return res.json({ success: false, error: 'Google Sheets not configured' });
 
-    const { candidateName, candidateEmail, position, assessorName, finalScore, facetScores, date } = req.body;
+    const { candidateName, candidateEmail, position, assessorName, finalScore, facetScores, date, assessmentType, answerData } = req.body;
     const sheet = doc.sheetsByTitle['Candidates'];
 
     await sheet.addRow({
@@ -16,7 +16,7 @@ module.exports = async function handler(req, res) {
       'Email': candidateEmail,
       'Position': position,
       'Assessor': assessorName,
-      'Final Score': finalScore,
+      'Final Score': finalScore ?? '',
       'C1': facetScores?.C1 ?? '',
       'C2': facetScores?.C2 ?? '',
       'C3': facetScores?.C3 ?? '',
@@ -25,6 +25,8 @@ module.exports = async function handler(req, res) {
       'C6': facetScores?.C6 ?? '',
       'Gemini Score': '',
       'Status': 'Pending Gemini',
+      'Type': assessmentType || 'Full',
+      'AnswerData': answerData ? JSON.stringify(answerData) : '',
     });
 
     res.json({ success: true });
