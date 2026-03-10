@@ -126,6 +126,25 @@
     .score-mid { background: #fffbeb; color: var(--warning); }
     .score-high { background: #f0fdf4; color: var(--success); }
 
+    .edit-pencil {
+      cursor: pointer;
+      opacity: 0.3;
+      font-size: 14px;
+      margin-left: 4px;
+      transition: opacity 0.2s;
+    }
+    .edit-pencil:hover { opacity: 1; }
+    .edit-inline {
+      width: 60px;
+      padding: 4px 8px;
+      border: 2px solid var(--primary);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+    }
+
     .status-badge {
       display: inline-block;
       padding: 3px 10px;
@@ -345,8 +364,14 @@ function renderTable(candidates) {
       <td><strong>${c.name || '—'}</strong></td>
       <td>${c.position || '—'}</td>
       <td><span style="font-size:12px;padding:2px 8px;border-radius:8px;background:${c.type === 'Quick' ? '#fef3c7' : '#dbeafe'};color:${c.type === 'Quick' ? '#92400e' : '#1e40af'}">${c.type || 'Full'}</span></td>
-      <td><span class="score-badge ${scoreClass}">${c.finalScore || '—'}</span></td>
-      <td>${c.geminiScore ? `<span class="score-badge ${parseFloat(c.geminiScore) <= 30 ? 'score-low' : parseFloat(c.geminiScore) <= 60 ? 'score-mid' : 'score-high'}">${c.geminiScore}</span>` : '—'}</td>
+      <td>
+        <span class="score-badge ${scoreClass}" id="score-${idx}">${c.finalScore || '—'}</span>
+        <span class="edit-pencil" onclick="event.stopPropagation();editField(${idx},'Final Score','score-${idx}')" title="Edit score">&#9998;</span>
+      </td>
+      <td>
+        ${c.geminiScore ? `<span class="score-badge ${parseFloat(c.geminiScore) <= 30 ? 'score-low' : parseFloat(c.geminiScore) <= 60 ? 'score-mid' : 'score-high'}" id="gemini-${idx}">${c.geminiScore}</span>` : `<span id="gemini-${idx}">—</span>`}
+        <span class="edit-pencil" onclick="event.stopPropagation();editField(${idx},'Gemini Score','gemini-${idx}')" title="Edit Gemini score">&#9998;</span>
+      </td>
       <td><span class="status-badge ${statusClass}">${c.status || '—'}</span></td>
     </tr>`;
   }).join('');
@@ -366,6 +391,66 @@ function renderTable(candidates) {
       </thead>
       <tbody>${rows}</tbody>
     </table>`;
+}
+
+function editField(idx, field, spanId) {
+  const c = allCandidates[idx];
+  const span = document.getElementById(spanId);
+  const currentVal = field === 'Final Score' ? (c.finalScore || '') : (c.geminiScore || '');
+
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'edit-inline';
+  input.value = currentVal;
+  input.min = 0;
+  input.max = 100;
+
+  const parent = span.parentElement;
+  const pencil = parent.querySelector('.edit-pencil');
+  span.style.display = 'none';
+  if (pencil) pencil.style.display = 'none';
+  parent.insertBefore(input, span);
+  input.focus();
+  input.select();
+
+  async function save() {
+    const val = input.value.trim();
+    if (val === '' || isNaN(val)) {
+      span.style.display = '';
+      if (pencil) pencil.style.display = '';
+      input.remove();
+      return;
+    }
+    try {
+      const res = await fetch('/api/update-candidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: c.email, field, value: val }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (field === 'Final Score') c.finalScore = val;
+        else c.geminiScore = val;
+        loadCandidates();
+      } else {
+        alert('Error: ' + (data.error || 'Unknown'));
+        span.style.display = '';
+        if (pencil) pencil.style.display = '';
+        input.remove();
+      }
+    } catch (e) {
+      alert('Error: ' + e.message);
+      span.style.display = '';
+      if (pencil) pencil.style.display = '';
+      input.remove();
+    }
+  }
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { span.style.display = ''; if (pencil) pencil.style.display = ''; input.remove(); }
+  });
 }
 
 function filterTable() {
